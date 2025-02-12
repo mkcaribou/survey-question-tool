@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/survey-question-tool/static/css/main.cf890fdb.css",
-    "main.js": "/survey-question-tool/static/js/main.a3d0aa8f.js",
+    "main.js": "/survey-question-tool/static/js/main.d2682930.js",
     "index.html": "/survey-question-tool/index.html",
     "main.cf890fdb.css.map": "/survey-question-tool/static/css/main.cf890fdb.css.map",
-    "main.a3d0aa8f.js.map": "/survey-question-tool/static/js/main.a3d0aa8f.js.map"
+    "main.d2682930.js.map": "/survey-question-tool/static/js/main.d2682930.js.map"
   },
   "entrypoints": [
     "static/css/main.cf890fdb.css",
-    "static/js/main.a3d0aa8f.js"
+    "static/js/main.d2682930.js"
   ]
 }
