@@ -321,7 +321,7 @@ const QuestionsDatabase = () => {
               </div>
             )}
           </div>
-        </div>
+        </div> 
         
         {/* Clear Options Button */}
         <div className="mt-4 text-right">
