@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/survey-question-tool/static/css/main.cf890fdb.css",
+    "main.js": "/survey-question-tool/static/js/main.8b7016cf.js",
+    "index.html": "/survey-question-tool/index.html",
+    "main.cf890fdb.css.map": "/survey-question-tool/static/css/main.cf890fdb.css.map",
+    "main.8b7016cf.js.map": "/survey-question-tool/static/js/main.8b7016cf.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.cf890fdb.css",
+    "static/js/main.8b7016cf.js"
+  ]
+}
