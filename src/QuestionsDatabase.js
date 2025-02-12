@@ -39,7 +39,7 @@ const QuestionsDatabase = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${process.env.PUBLIC_URL}/survey.xlsx`);
+        const res = await fetch(`${process.env.PUBLIC_URL}/static/survey.xlsx`);
         if (!res.ok) {
           throw new Error('failed to fetch survey file');
         }
@@ -58,7 +58,7 @@ const QuestionsDatabase = () => {
         setData(jsonData);
         setFilters({
           categories: new Set(
-            jsonData.map(row => row['Category '] || row.Category).filter(Boolean)
+            jsonData.map(row => row['Category'] || row.Category).filter(Boolean)
           ),
           subCategories: new Set(
             jsonData.map(row => row['Sub-category']).filter(Boolean)
