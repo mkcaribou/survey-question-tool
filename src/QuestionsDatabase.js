@@ -7,7 +7,7 @@ const QuestionsDatabase = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // filters available in the database
+  // Available filters based on the loaded data
   const [filters, setFilters] = useState({
     categories: new Set(),
     subCategories: new Set(),
@@ -15,7 +15,7 @@ const QuestionsDatabase = () => {
     recommendedForStrive: new Set()
   });
 
-  // selected filters for filtering data
+  // User-selected filters
   const [selectedFilters, setSelectedFilters] = useState({
     categories: new Set(),
     subCategories: new Set(),
@@ -23,7 +23,7 @@ const QuestionsDatabase = () => {
     recommendedForStrive: new Set()
   });
 
-  // which filter sections are expanded
+  // Which filter dropdown sections are expanded
   const [expandedSections, setExpandedSections] = useState({
     categories: false,
     subCategories: false,
@@ -31,49 +31,45 @@ const QuestionsDatabase = () => {
     recommendedForStrive: false
   });
 
-  // selected rows by id
+  // Track selected row IDs for export
   const [selectedRowIds, setSelectedRowIds] = useState(new Set());
 
-  // load data from the survey excel file located in public folder
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
-	const surveyFileUrl = `${process.env.PUBLIC_URL}/survey.xlsx`;
-	console.log("Fetching survey file from:", surveyFileUrl);
-	const res = await fetch(surveyFileUrl);
+        const surveyFileUrl = `${process.env.PUBLIC_URL}/survey.xlsx`;
+        const res = await fetch(surveyFileUrl);
         if (!res.ok) {
-          throw new Error('failed to fetch survey file');
+          throw new Error(`Failed to fetch survey file. Status: ${res.status}`);
         }
         const arrayBuffer = await res.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         if (!workbook.SheetNames.length) {
-          throw new Error('no sheets found in workbook');
+          throw new Error('No sheets found in workbook');
         }
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         let jsonData = XLSX.utils.sheet_to_json(firstSheet);
         if (!jsonData.length) {
-          throw new Error('no data found in sheet');
+          throw new Error('No data found in sheet');
         }
-        // assign unique ids to each row
-        jsonData = jsonData.map((row, index) => ({ id: index, ...row }));
+        // Trim any extra whitespace from keys
+        jsonData = jsonData.map((row, index) => {
+          const trimmedRow = {};
+          Object.keys(row).forEach((key) => {
+            trimmedRow[key.trim()] = row[key];
+          });
+          return { id: index, ...trimmedRow };
+        });
         setData(jsonData);
         setFilters({
-          categories: new Set(
-            jsonData.map(row => row['Category'] || row.Category).filter(Boolean)
-          ),
-          subCategories: new Set(
-            jsonData.map(row => row['Sub-category']).filter(Boolean)
-          ),
-          questionTypes: new Set(
-            jsonData.map(row => row['Type of question']).filter(Boolean)
-          ),
-          recommendedForStrive: new Set(
-            jsonData.map(row => row['Recommended for Strive']).filter(Boolean)
-          )
+          categories: new Set(jsonData.map((row) => row.Category).filter(Boolean)),
+          subCategories: new Set(jsonData.map((row) => row['Sub-category']).filter(Boolean)),
+          questionTypes: new Set(jsonData.map((row) => row['Type of question']).filter(Boolean)),
+          recommendedForStrive: new Set(jsonData.map((row) => row['Recommended for Strive']).filter(Boolean))
         });
       } catch (err) {
-        console.error('error loading data:', err);
+        console.error('Error loading data:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -83,30 +79,23 @@ const QuestionsDatabase = () => {
     loadData();
   }, []);
 
-  // memoized filtered data based on selected filters
   const filteredData = useMemo(() => {
-    return data.filter(row => {
-      const category = row['Category '] || row.Category;
-      const subCategory = row['Sub-category'];
-      const questionType = row['Type of question'];
-      const recommended = row['Recommended for Strive'];
-
+    return data.filter((row) => {
       const categoryMatch =
-        selectedFilters.categories.size === 0 || selectedFilters.categories.has(category);
+        selectedFilters.categories.size === 0 || selectedFilters.categories.has(row.Category);
       const subCategoryMatch =
-        selectedFilters.subCategories.size === 0 || selectedFilters.subCategories.has(subCategory);
+        selectedFilters.subCategories.size === 0 || selectedFilters.subCategories.has(row['Sub-category']);
       const questionTypeMatch =
-        selectedFilters.questionTypes.size === 0 || selectedFilters.questionTypes.has(questionType);
+        selectedFilters.questionTypes.size === 0 || selectedFilters.questionTypes.has(row['Type of question']);
       const recommendedMatch =
         selectedFilters.recommendedForStrive.size === 0 ||
-        selectedFilters.recommendedForStrive.has(recommended);
-
+        selectedFilters.recommendedForStrive.has(row['Recommended for Strive']);
       return categoryMatch && subCategoryMatch && questionTypeMatch && recommendedMatch;
     });
   }, [data, selectedFilters]);
 
   const toggleFilter = (filterKey, value) => {
-    setSelectedFilters(prev => {
+    setSelectedFilters((prev) => {
       const updated = new Set(prev[filterKey]);
       if (updated.has(value)) {
         updated.delete(value);
@@ -117,15 +106,15 @@ const QuestionsDatabase = () => {
     });
   };
 
-  const toggleSection = section => {
-    setExpandedSections(prev => ({
+  const toggleSection = (section) => {
+    setExpandedSections((prev) => ({
       ...prev,
       [section]: !prev[section]
     }));
   };
 
-  const toggleRowSelection = id => {
-    setSelectedRowIds(prev => {
+  const toggleRowSelection = (id) => {
+    setSelectedRowIds((prev) => {
       const updated = new Set(prev);
       if (updated.has(id)) {
         updated.delete(id);
@@ -136,20 +125,29 @@ const QuestionsDatabase = () => {
     });
   };
 
-  const handleSelectAll = e => {
+  const handleSelectAll = (e) => {
     if (e.target.checked) {
-      const allIds = filteredData.map(row => row.id);
+      const allIds = filteredData.map((row) => row.id);
       setSelectedRowIds(new Set(allIds));
     } else {
-      // remove the filtered rows from the selection
+      // Remove the filtered rows from the selection
       const newSelection = new Set(selectedRowIds);
-      filteredData.forEach(row => newSelection.delete(row.id));
+      filteredData.forEach((row) => newSelection.delete(row.id));
       setSelectedRowIds(newSelection);
     }
   };
 
+  const clearFilters = () => {
+    setSelectedFilters({
+      categories: new Set(),
+      subCategories: new Set(),
+      questionTypes: new Set(),
+      recommendedForStrive: new Set()
+    });
+  };
+
   const exportToCSV = () => {
-    const selectedData = filteredData.filter(row => selectedRowIds.has(row.id));
+    const selectedData = filteredData.filter((row) => selectedRowIds.has(row.id));
     if (!selectedData.length) return;
 
     const worksheet = XLSX.utils.json_to_sheet(selectedData);
@@ -159,17 +157,17 @@ const QuestionsDatabase = () => {
   };
 
   const exportToWord = () => {
-    const selectedData = filteredData.filter(row => selectedRowIds.has(row.id));
+    const selectedData = filteredData.filter((row) => selectedRowIds.has(row.id));
     if (!selectedData.length) return;
 
     let docContent = '';
     selectedData.forEach((row, index) => {
-      docContent += `question ${index + 1}: ${row.Question}\n`;
-      docContent += `response options: ${row['Question response']}\n`;
-      docContent += `type: ${row['Type of question']}\n`;
-      docContent += `category: ${row['Category '] || row.Category}\n`;
-      docContent += `sub-category: ${row['Sub-category']}\n`;
-      docContent += `recommended for strive: ${row['Recommended for Strive']}\n\n`;
+      docContent += `Question ${index + 1}: ${row.Question}\n`;
+      docContent += `Response Options: ${row['Question response']}\n`;
+      docContent += `Type: ${row['Type of question']}\n`;
+      docContent += `Category: ${row.Category}\n`;
+      docContent += `Sub-category: ${row['Sub-category']}\n`;
+      docContent += `Recommended for Strive: ${row['Recommended for Strive']}\n\n`;
     });
 
     const blob = new Blob([docContent], { type: 'application/msword' });
@@ -184,156 +182,190 @@ const QuestionsDatabase = () => {
   };
 
   if (loading) {
-    return <div>loading survey questions...</div>;
+    return <div className="p-6 text-center text-gray-600">Loading survey questions...</div>;
   }
   if (error) {
-    return <div>error loading data: {error}</div>;
+    return <div className="p-6 text-center text-red-600">Error loading data: {error}</div>;
   }
 
   const allFilteredSelected =
-    filteredData.length > 0 && filteredData.every(row => selectedRowIds.has(row.id));
+    filteredData.length > 0 && filteredData.every((row) => selectedRowIds.has(row.id));
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* filter section for categories */}
-        <div className="border rounded-lg mb-4">
-          <button
-            onClick={() => toggleSection('categories')}
-            className="w-full px-4 py-2 flex justify-between items-center bg-gray-50 rounded-t-lg hover:bg-gray-100"
-          >
-            <span>categories</span>
-            {expandedSections.categories ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-          {expandedSections.categories && (
-            <div className="p-4 space-y-2">
-              {Array.from(filters.categories).map(option => (
-                <label key={option} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedFilters.categories.has(option)}
-                    onChange={() => toggleFilter('categories', option)}
-                    className="rounded border-gray-300"
-                  />
-                  <span>{option}</span>
-                </label>
-              ))}
-            </div>
-          )}
+    <div className="p-6 max-w-7xl mx-auto">
+      <h1 className="text-3xl font-bold text-center mb-6">Survey Questions</h1>
+      
+      {/* Filters Section */}
+      <div className="mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Categories Filter */}
+          <div className="border rounded shadow">
+            <button
+              onClick={() => toggleSection('categories')}
+              className="w-full px-4 py-2 bg-blue-100 hover:bg-blue-200 text-left font-semibold flex justify-between items-center focus:outline-none"
+              aria-expanded={expandedSections.categories}
+            >
+              Categories
+              {expandedSections.categories ? (
+                <ChevronUp className="w-5 h-5" />
+              ) : (
+                <ChevronDown className="w-5 h-5" />
+              )}
+            </button>
+            {expandedSections.categories && (
+              <div className="p-4">
+                {Array.from(filters.categories).map((option) => (
+                  <label key={option} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedFilters.categories.has(option)}
+                      onChange={() => toggleFilter('categories', option)}
+                      className="rounded border-gray-300 focus:ring-blue-500"
+                    />
+                    <span>{option}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          {/* Sub-Categories Filter */}
+          <div className="border rounded shadow">
+            <button
+              onClick={() => toggleSection('subCategories')}
+              className="w-full px-4 py-2 bg-blue-100 hover:bg-blue-200 text-left font-semibold flex justify-between items-center focus:outline-none"
+              aria-expanded={expandedSections.subCategories}
+            >
+              Sub-Categories
+              {expandedSections.subCategories ? (
+                <ChevronUp className="w-5 h-5" />
+              ) : (
+                <ChevronDown className="w-5 h-5" />
+              )}
+            </button>
+            {expandedSections.subCategories && (
+              <div className="p-4">
+                {Array.from(filters.subCategories).map((option) => (
+                  <label key={option} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedFilters.subCategories.has(option)}
+                      onChange={() => toggleFilter('subCategories', option)}
+                      className="rounded border-gray-300 focus:ring-blue-500"
+                    />
+                    <span>{option}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          {/* Question Types Filter */}
+          <div className="border rounded shadow">
+            <button
+              onClick={() => toggleSection('questionTypes')}
+              className="w-full px-4 py-2 bg-blue-100 hover:bg-blue-200 text-left font-semibold flex justify-between items-center focus:outline-none"
+              aria-expanded={expandedSections.questionTypes}
+            >
+              Question Types
+              {expandedSections.questionTypes ? (
+                <ChevronUp className="w-5 h-5" />
+              ) : (
+                <ChevronDown className="w-5 h-5" />
+              )}
+            </button>
+            {expandedSections.questionTypes && (
+              <div className="p-4">
+                {Array.from(filters.questionTypes).map((option) => (
+                  <label key={option} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedFilters.questionTypes.has(option)}
+                      onChange={() => toggleFilter('questionTypes', option)}
+                      className="rounded border-gray-300 focus:ring-blue-500"
+                    />
+                    <span>{option}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          {/* Recommended for Strive Filter */}
+          <div className="border rounded shadow">
+            <button
+              onClick={() => toggleSection('recommendedForStrive')}
+              className="w-full px-4 py-2 bg-blue-100 hover:bg-blue-200 text-left font-semibold flex justify-between items-center focus:outline-none"
+              aria-expanded={expandedSections.recommendedForStrive}
+            >
+              Recommended for Strive
+              {expandedSections.recommendedForStrive ? (
+                <ChevronUp className="w-5 h-5" />
+              ) : (
+                <ChevronDown className="w-5 h-5" />
+              )}
+            </button>
+            {expandedSections.recommendedForStrive && (
+              <div className="p-4">
+                {Array.from(filters.recommendedForStrive).map((option) => (
+                  <label key={option} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedFilters.recommendedForStrive.has(option)}
+                      onChange={() => toggleFilter('recommendedForStrive', option)}
+                      className="rounded border-gray-300 focus:ring-blue-500"
+                    />
+                    <span>{option}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        {/* filter section for sub-categories */}
-        <div className="border rounded-lg mb-4">
+        
+        {/* Clear Options Button */}
+        <div className="mt-4 text-right">
           <button
-            onClick={() => toggleSection('subCategories')}
-            className="w-full px-4 py-2 flex justify-between items-center bg-gray-50 rounded-t-lg hover:bg-gray-100"
+            onClick={clearFilters}
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300"
           >
-            <span>sub-categories</span>
-            {expandedSections.subCategories ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            Clear Options
           </button>
-          {expandedSections.subCategories && (
-            <div className="p-4 space-y-2">
-              {Array.from(filters.subCategories).map(option => (
-                <label key={option} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedFilters.subCategories.has(option)}
-                    onChange={() => toggleFilter('subCategories', option)}
-                    className="rounded border-gray-300"
-                  />
-                  <span>{option}</span>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-        {/* filter section for question types */}
-        <div className="border rounded-lg mb-4">
-          <button
-            onClick={() => toggleSection('questionTypes')}
-            className="w-full px-4 py-2 flex justify-between items-center bg-gray-50 rounded-t-lg hover:bg-gray-100"
-          >
-            <span>question types</span>
-            {expandedSections.questionTypes ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-          {expandedSections.questionTypes && (
-            <div className="p-4 space-y-2">
-              {Array.from(filters.questionTypes).map(option => (
-                <label key={option} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedFilters.questionTypes.has(option)}
-                    onChange={() => toggleFilter('questionTypes', option)}
-                    className="rounded border-gray-300"
-                  />
-                  <span>{option}</span>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-        {/* filter section for recommended for strive */}
-        <div className="border rounded-lg mb-4">
-          <button
-            onClick={() => toggleSection('recommendedForStrive')}
-            className="w-full px-4 py-2 flex justify-between items-center bg-gray-50 rounded-t-lg hover:bg-gray-100"
-          >
-            <span>recommended for strive</span>
-            {expandedSections.recommendedForStrive ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-          {expandedSections.recommendedForStrive && (
-            <div className="p-4 space-y-2">
-              {Array.from(filters.recommendedForStrive).map(option => (
-                <label key={option} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedFilters.recommendedForStrive.has(option)}
-                    onChange={() => toggleFilter('recommendedForStrive', option)}
-                    className="rounded border-gray-300"
-                  />
-                  <span>{option}</span>
-                </label>
-              ))}
-            </div>
-          )}
         </div>
       </div>
-
-      <div className="flex justify-between items-center mb-2">
-        <div className="text-sm">
-          showing {filteredData.length} of {data.length} questions
-          {selectedRowIds.size > 0 && ` (${selectedRowIds.size} selected)`}
-        </div>
-      </div>
-
-      <div className="overflow-x-auto border rounded-lg">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
+      
+      {/* Table Section */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white border border-gray-200 rounded shadow">
+          <thead className="bg-blue-500 text-white">
             <tr>
-              <th className="px-4 py-2 text-left w-8">
+              <th className="px-4 py-2">
                 <input
                   type="checkbox"
                   onChange={handleSelectAll}
                   checked={allFilteredSelected}
-                  className="rounded border-gray-300"
+                  className="rounded border-gray-300 focus:ring-blue-500"
+                  aria-label="Select all questions"
                 />
               </th>
-              <th className="px-4 py-2 text-left">question</th>
-              <th className="px-4 py-2 text-left w-64">response options</th>
-              <th className="px-4 py-2 text-left">type</th>
-              <th className="px-4 py-2 text-left">category</th>
-              <th className="px-4 py-2 text-left">sub-category</th>
-              <th className="px-4 py-2 text-left">recommended for strive</th>
+              <th className="px-4 py-2">Question</th>
+              <th className="px-4 py-2">Response Options</th>
+              <th className="px-4 py-2">Type</th>
+              <th className="px-4 py-2">Category</th>
+              <th className="px-4 py-2">Sub-Category</th>
+              <th className="px-4 py-2">Recommended for Strive</th>
             </tr>
           </thead>
-          <tbody>
-            {filteredData.map(row => (
-              <tr key={row.id} className="hover:bg-gray-50">
-                <td className="px-4 py-2">
+          <tbody className="divide-y divide-gray-200">
+            {filteredData.map((row) => (
+              <tr key={row.id} className="hover:bg-gray-100">
+                <td className="px-4 py-2 text-center">
                   <input
                     type="checkbox"
                     checked={selectedRowIds.has(row.id)}
                     onChange={() => toggleRowSelection(row.id)}
-                    className="rounded border-gray-300"
+                    className="rounded border-gray-300 focus:ring-blue-500"
+                    aria-label={`Select question: ${row.Question}`}
                   />
                 </td>
                 <td className="px-4 py-2">{row.Question}</td>
@@ -341,7 +373,7 @@ const QuestionsDatabase = () => {
                   <div className="max-h-24 overflow-y-auto">{row['Question response']}</div>
                 </td>
                 <td className="px-4 py-2">{row['Type of question']}</td>
-                <td className="px-4 py-2">{row['Category '] || row.Category}</td>
+                <td className="px-4 py-2">{row.Category}</td>
                 <td className="px-4 py-2">{row['Sub-category']}</td>
                 <td className="px-4 py-2">{row['Recommended for Strive']}</td>
               </tr>
@@ -349,21 +381,24 @@ const QuestionsDatabase = () => {
           </tbody>
         </table>
       </div>
-
-      <div className="flex gap-4 justify-end">
+      
+      {/* Export Buttons */}
+      <div className="flex gap-4 justify-end mt-6">
         <button
           onClick={exportToCSV}
-          className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300"
           disabled={selectedRowIds.size === 0}
         >
-          <FileDown className="w-4 h-4 inline" /> export to excel
+          <FileDown className="w-5 h-5" />
+          Export to Excel
         </button>
         <button
           onClick={exportToWord}
-          className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300"
           disabled={selectedRowIds.size === 0}
         >
-          <FileText className="w-4 h-4 inline" /> export to word
+          <FileText className="w-5 h-5" />
+          Export to Word
         </button>
       </div>
     </div>
