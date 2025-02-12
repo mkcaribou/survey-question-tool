@@ -1,0 +1,10 @@
+{
+  "files": {
+    "main.js": "/survey-question-tool/static/js/main.af51f120.js",
+    "index.html": "/survey-question-tool/index.html",
+    "main.af51f120.js.map": "/survey-question-tool/static/js/main.af51f120.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.af51f120.js"
+  ]
+}
