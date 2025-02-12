@@ -39,7 +39,8 @@ const QuestionsDatabase = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${process.env.PUBLIC_URL}/static/survey.xlsx`);
+        const surveyFileUrl = `${process.env.PUBLIC_URL}/static/survey.xlsx`;
+	const res = await fetch(surveyFileUrl);
         if (!res.ok) {
           throw new Error('failed to fetch survey file');
         }

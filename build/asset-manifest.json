@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.js": "/survey-question-tool/static/js/main.d30260f5.js",
+    "main.js": "/survey-question-tool/static/js/main.25740440.js",
     "index.html": "/survey-question-tool/index.html",
-    "main.d30260f5.js.map": "/survey-question-tool/static/js/main.d30260f5.js.map"
+    "main.25740440.js.map": "/survey-question-tool/static/js/main.25740440.js.map"
   },
   "entrypoints": [
-    "static/js/main.d30260f5.js"
+    "static/js/main.25740440.js"
   ]
 }
