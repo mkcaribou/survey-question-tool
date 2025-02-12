@@ -11,13 +11,18 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
   },
   "devDependencies": {
-    "gh-pages": "^5.0.0"
+    "@craco/craco": "^7.1.0",
+    "autoprefixer": "^10.4.20",
+    "gh-pages": "^5.0.0",
+    "postcss": "^8.5.2",
+    "tailwindcss": "^4.0.6"
   },
   "browserslist": {
     "production": [
